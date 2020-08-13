@@ -1,6 +1,7 @@
 {
   "name": "lfs",
   "version": "0.1.0",
+  "license": "MIT",
   "bin": {
     "lfs": "bin/lfs.js"
   },
@@ -8,22 +9,35 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "generate": "quicktype lambda/io.ts -o lambda/parser.ts --lang ts"
   },
   "devDependencies": {
-    "aws-cdk": "1.57.0",
     "@aws-cdk/assert": "1.57.0",
+    "@types/aws-lambda": "^8.10.60",
     "@types/jest": "^25.2.1",
     "@types/node": "10.17.5",
+    "aws-cdk": "1.57.0",
     "jest": "^25.5.0",
+    "quicktype": "^15.0.256",
     "ts-jest": "^25.3.1",
     "ts-node": "^8.1.0",
     "typescript": "~3.7.2"
   },
   "dependencies": {
+    "@aws-cdk/aws-apigateway": "^1.57.0",
+    "@aws-cdk/aws-cognito": "^1.57.0",
+    "@aws-cdk/aws-iam": "^1.57.0",
+    "@aws-cdk/aws-lambda": "^1.57.0",
+    "@aws-cdk/aws-lambda-nodejs": "^1.57.0",
+    "@aws-cdk/aws-s3": "^1.57.0",
     "@aws-cdk/aws-sns": "1.57.0",
     "@aws-cdk/aws-sns-subscriptions": "1.57.0",
     "@aws-cdk/aws-sqs": "1.57.0",
-    "@aws-cdk/core": "1.57.0"
+    "@aws-cdk/core": "1.57.0",
+    "@aws-cdk/custom-resources": "^1.57.0",
+    "aws-lambda": "^1.0.6",
+    "aws-sdk": "^2.731.0",
+    "dayjs": "^1.8.33"
   }
 }
