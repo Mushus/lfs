@@ -1,15 +1,34 @@
-# Welcome to your CDK TypeScript project!
+# LFS
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`LfsStack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+LFS is a secure, cloud-native implementation of the Git LFS server. You can easily build this server yourself.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## feature
 
-## Useful commands
+-   S3 as a data store
+-   UserPool as user management
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+## install
+
+-   install node
+-   install yarn
+-   install docker
+
+Configure AWS access keys.
+
+```
+export AWS_ACCESS_KEY_ID=AKXXXXXXXXXXXXXXXXXXX
+export AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+export AWS_DEFAULT_REGION=ap-northeast-1
+```
+
+CDK's initial setup
+
+```
+yarn cdk bootstrap
+```
+
+Deploy Application
+
+```
+yarn cdk deploy
+```
