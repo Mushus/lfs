@@ -1,17 +1,20 @@
 // To parse this data:
 //
-//   import { Convert, BatchRequestBody } from "./file";
+//   import { Convert, BatchRequestBody, BatchResponseBody, BatchRespObject, BatchRespOperation } from "./file";
 //
 //   const batchRequestBody = Convert.toBatchRequestBody(json);
+//   const batchResponseBody = Convert.toBatchResponseBody(json);
+//   const batchRespObject = Convert.toBatchRespObject(json);
+//   const batchRespOperation = Convert.toBatchRespOperation(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
 export interface BatchRequestBody {
-    objects:   Object[];
-    operation: Operation;
-    ref:       Ref;
-    transfers: string[];
+    objects:    Object[];
+    operation:  Operation;
+    ref?:       Ref;
+    transfers?: string[];
 }
 
 export interface Object {
@@ -28,6 +31,33 @@ export interface Ref {
     name: string;
 }
 
+export interface BatchResponseBody {
+    objects:  BatchRespObject[];
+    transfer: Transfer;
+}
+
+export interface BatchRespObject {
+    actions:       Actions;
+    authenticated: boolean;
+    oid:           string;
+    size:          number;
+}
+
+export interface Actions {
+    download?: BatchRespOperation;
+    upload?:   BatchRespOperation;
+}
+
+export interface BatchRespOperation {
+    expires_at: string;
+    header:     { [key: string]: string };
+    href:       string;
+}
+
+export enum Transfer {
+    Basic = "basic",
+}
+
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
@@ -37,6 +67,30 @@ export class Convert {
 
     public static batchRequestBodyToJson(value: BatchRequestBody): string {
         return JSON.stringify(uncast(value, r("BatchRequestBody")), null, 2);
+    }
+
+    public static toBatchResponseBody(json: string): BatchResponseBody {
+        return cast(JSON.parse(json), r("BatchResponseBody"));
+    }
+
+    public static batchResponseBodyToJson(value: BatchResponseBody): string {
+        return JSON.stringify(uncast(value, r("BatchResponseBody")), null, 2);
+    }
+
+    public static toBatchRespObject(json: string): BatchRespObject {
+        return cast(JSON.parse(json), r("BatchRespObject"));
+    }
+
+    public static batchRespObjectToJson(value: BatchRespObject): string {
+        return JSON.stringify(uncast(value, r("BatchRespObject")), null, 2);
+    }
+
+    public static toBatchRespOperation(json: string): BatchRespOperation {
+        return cast(JSON.parse(json), r("BatchRespOperation"));
+    }
+
+    public static batchRespOperationToJson(value: BatchRespOperation): string {
+        return JSON.stringify(uncast(value, r("BatchRespOperation")), null, 2);
     }
 }
 
@@ -176,8 +230,8 @@ const typeMap: any = {
     "BatchRequestBody": o([
         { json: "objects", js: "objects", typ: a(r("Object")) },
         { json: "operation", js: "operation", typ: r("Operation") },
-        { json: "ref", js: "ref", typ: r("Ref") },
-        { json: "transfers", js: "transfers", typ: a("") },
+        { json: "ref", js: "ref", typ: u(undefined, r("Ref")) },
+        { json: "transfers", js: "transfers", typ: u(undefined, a("")) },
     ], "any"),
     "Object": o([
         { json: "oid", js: "oid", typ: "" },
@@ -186,8 +240,30 @@ const typeMap: any = {
     "Ref": o([
         { json: "name", js: "name", typ: "" },
     ], "any"),
+    "BatchResponseBody": o([
+        { json: "objects", js: "objects", typ: a(r("BatchRespObject")) },
+        { json: "transfer", js: "transfer", typ: r("Transfer") },
+    ], "any"),
+    "BatchRespObject": o([
+        { json: "actions", js: "actions", typ: r("Actions") },
+        { json: "authenticated", js: "authenticated", typ: true },
+        { json: "oid", js: "oid", typ: "" },
+        { json: "size", js: "size", typ: 3.14 },
+    ], "any"),
+    "Actions": o([
+        { json: "download", js: "download", typ: u(undefined, r("BatchRespOperation")) },
+        { json: "upload", js: "upload", typ: u(undefined, r("BatchRespOperation")) },
+    ], "any"),
+    "BatchRespOperation": o([
+        { json: "expires_at", js: "expires_at", typ: "" },
+        { json: "header", js: "header", typ: m("") },
+        { json: "href", js: "href", typ: "" },
+    ], "any"),
     "Operation": [
         "download",
         "upload",
+    ],
+    "Transfer": [
+        "basic",
     ],
 };

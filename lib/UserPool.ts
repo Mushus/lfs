@@ -6,6 +6,7 @@ interface ComputeStackProps {}
 
 export default class UserPool extends cdk.Construct {
     public readonly userPoolId: string;
+    public readonly userPoolArn: string;
     public readonly clientSecret: string;
     public readonly clientId: string;
 
@@ -19,9 +20,6 @@ export default class UserPool extends cdk.Construct {
         const userPool = new cognito.UserPool(this, "userPool", {
             mfa: cognito.Mfa.OPTIONAL,
             selfSignUpEnabled: false,
-            signInAliases: {
-                email: true,
-            },
             passwordPolicy: {
                 minLength: 8,
                 requireLowercase: false,
@@ -41,6 +39,11 @@ export default class UserPool extends cdk.Construct {
             userPool,
             userPoolClientName: "lfs",
             generateSecret: true,
+            authFlows: {
+                adminUserPassword: true,
+                userPassword: true,
+                refreshToken: true,
+            },
         });
 
         const region = cdk.Stack.of(this).region;
@@ -74,6 +77,7 @@ export default class UserPool extends cdk.Construct {
         );
 
         this.userPoolId = userPool.userPoolId;
+        this.userPoolArn = userPool.userPoolArn;
         this.clientSecret = userPoolClientSecret;
         this.clientId = userPoolClient.userPoolClientId;
     }

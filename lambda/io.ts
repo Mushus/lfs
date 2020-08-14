@@ -1,19 +1,19 @@
 export interface BatchRequestBody {
-    operation: 'upload' | 'download';
-    transfers: Array<'basic' | string>;
-    ref: {
+    operation: "upload" | "download";
+    transfers?: Array<"basic" | string>;
+    ref?: {
         name: string;
     };
     objects: Array<{
         oid: string;
         size: number;
-    }>
-};
+    }>;
+}
 
 export interface BatchResponseBody {
-    transfer: 'basic';
+    transfer: "basic";
     objects: BatchRespObject[];
-};
+}
 
 export interface BatchRespObject {
     oid: string;
@@ -22,7 +22,7 @@ export interface BatchRespObject {
     actions: {
         upload?: BatchRespOperation;
         download?: BatchRespOperation;
-    }
+    };
 }
 export interface BatchRespOperation {
     href: string;

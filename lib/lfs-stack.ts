@@ -3,6 +3,7 @@ import * as cdk from "@aws-cdk/core";
 import * as apigateway from "@aws-cdk/aws-apigateway";
 import * as s3 from "@aws-cdk/aws-s3";
 import * as cognito from "@aws-cdk/aws-cognito";
+import * as iam from "@aws-cdk/aws-iam";
 import UserPool from "./UserPool";
 
 export class LfsStack extends cdk.Stack {
@@ -28,6 +29,16 @@ export class LfsStack extends cdk.Stack {
             environment,
         });
         bucket.grantReadWrite(batchFunc);
+        batchFunc.addToRolePolicy(
+            new iam.PolicyStatement({
+                resources: [userPool.userPoolArn],
+                actions: ["cognito-idp:AdminInitiateAuth"],
+            })
+        );
+
+        const lockFunc = new NodejsFunction(this, "lockFunc", {
+            entry: "lambda/handler/lock.ts",
+        });
 
         const gateway = new apigateway.RestApi(this, "gateway", {
             restApiName: `lfs`,
@@ -42,6 +53,12 @@ export class LfsStack extends cdk.Stack {
         batchResource.addMethod(
             "POST",
             new apigateway.LambdaIntegration(batchFunc)
+        );
+        const lockResource = repoResource.addResource("locks");
+        const verifyResource = lockResource.addResource("verify");
+        verifyResource.addMethod(
+            "POST",
+            new apigateway.LambdaIntegration(lockFunc)
         );
     }
 }

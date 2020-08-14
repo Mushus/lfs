@@ -4,14 +4,7 @@ import dayjs from "dayjs";
 import { Handler } from "../interfaces";
 import { BatchRequestBody, BatchResponseBody, BatchRespObject } from "../io";
 import { Convert } from "../parser";
-
-export const invalidParameter = () => ({
-    statusCode: 400,
-    headers: {},
-    body: JSON.stringify({
-        message: "invalid parameter",
-    }),
-});
+import { success, invalidParameter, authorizationRequired } from "../helper";
 
 const s3 = new S3({
     signatureVersion: "v4",
@@ -40,25 +33,16 @@ export const handler: Handler = async (event, context) => {
 
     const { operation } = requestBody;
 
-    const authorizationHeader = event.headers.authorization;
+    const authorizationHeader = event.headers["Authorization"];
     const isAnonymous = !authorizationHeader;
     if (isAnonymous) {
         const isAllow = env.anonymousAuthority.includes(operation);
         if (!isAllow) {
-            return {
-                statusCode: 401,
-                headers: {
-                    "WWW-Authenticate": "Basic",
-                },
-                body: JSON.stringify({
-                    message: "Authorization Required",
-                }),
-            };
+            return authorizationRequired();
         }
     } else {
-        const decoder = new Buffer(authorizationHeader, "base64");
-        const idpass = decoder.toString("ascii");
-
+        const basicValue = authorizationHeader.replace(/^Basic\s/, "");
+        const idpass = Buffer.from(basicValue, "base64").toString("ascii");
         const [id, password] = idpass.split(":");
         if (!id || !password) return invalidParameter();
 
@@ -80,17 +64,9 @@ export const handler: Handler = async (event, context) => {
                     },
                 })
                 .promise();
-            console.log(resp);
         } catch (e) {
-            return {
-                statusCode: 401,
-                headers: {
-                    "WWW-Authenticate": "Basic",
-                },
-                body: JSON.stringify({
-                    message: "Authorization Required",
-                }),
-            };
+            console.log(e);
+            return authorizationRequired();
         }
     }
 
@@ -115,9 +91,9 @@ export const handler: Handler = async (event, context) => {
                 Key: `${user}/${repo}/${oid}`,
                 Expires: env.expires,
             };
-            console.log(s3Operation, param);
+
             const url = await s3.getSignedUrlPromise(s3Operation, param);
-            // const url = "test";
+
             const actions: BatchRespObject["actions"] = {
                 [operation]: {
                     href: url,
@@ -142,13 +118,7 @@ export const handler: Handler = async (event, context) => {
         objects,
     };
 
-    console.log(JSON.stringify(body));
-
-    return {
-        statusCode: 200,
-        headers: {},
-        body: JSON.stringify(body),
-    };
+    return success(body);
 };
 
 const getEnvironment = () => {

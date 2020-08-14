@@ -28,7 +28,28 @@ yarn cdk bootstrap
 ```
 
 Deploy Application
+git
 
 ```
 yarn cdk deploy
 ```
+
+When you run `yarn cdk deploy`, you will see the following output.
+
+```
+Outputs:
+LfsStack.gatewayEndpointDA8D204E = https://xxxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/prod/
+```
+
+## usage
+
+For example, if the repository you want to use Git LFS is `[UserName]/[RepoName]`, you can use lfs by writing `.lfsconfig` file like this.
+
+```
+[remote "origin"]
+	lfsurl = https://xxxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/prod/lfs/[UserName]/[RepoName]
+```
+
+### user creation
+
+You can create users by operating Cognito from the AWS console.
