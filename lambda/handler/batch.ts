@@ -1,18 +1,23 @@
-import crypto from "crypto";
-import { S3, CognitoIdentityServiceProvider } from "aws-sdk";
+import { S3 } from "aws-sdk";
 import dayjs from "dayjs";
 import { Handler } from "../interfaces";
 import { BatchRequestBody, BatchResponseBody, BatchRespObject } from "../io";
 import { Convert } from "../parser";
-import { success, invalidParameter, authorizationRequired } from "../helper";
+import {
+    success,
+    invalidParameter,
+    authorizationRequired,
+    getBasicAuthorization,
+    invalidUserOrPassword,
+} from "../helper";
+import { getEnvironment } from "../env";
+import Cognito from "../adapter/cognito";
 
 const s3 = new S3({
     signatureVersion: "v4",
 });
 
-const cognito = new CognitoIdentityServiceProvider({
-    apiVersion: "2016-04-18",
-});
+const authorizer = new Cognito();
 
 export const handler: Handler = async (event, context) => {
     const env = getEnvironment();
@@ -27,46 +32,22 @@ export const handler: Handler = async (event, context) => {
     try {
         requestBody = Convert.toBatchRequestBody(event.body);
     } catch (e) {
-        console.log(e);
         return invalidParameter();
     }
 
     const { operation } = requestBody;
 
-    const authorizationHeader = event.headers["Authorization"];
-    const isAnonymous = !authorizationHeader;
-    if (isAnonymous) {
+    const authParams = getBasicAuthorization(event);
+    if (authParams.anonymous) {
         const isAllow = env.anonymousAuthority.includes(operation);
         if (!isAllow) {
             return authorizationRequired();
         }
     } else {
-        const basicValue = authorizationHeader.replace(/^Basic\s/, "");
-        const idpass = Buffer.from(basicValue, "base64").toString("ascii");
-        const [id, password] = idpass.split(":");
-        if (!id || !password) return invalidParameter();
+        if (!authParams.id || !authParams.password) return invalidParameter();
 
-        const { clientId = "", clientSecret = "", userPoolId = "" } = env;
-        try {
-            const secretHash = crypto
-                .createHmac("sha256", clientSecret)
-                .update(id + clientId)
-                .digest("base64");
-            const resp = await cognito
-                .adminInitiateAuth({
-                    UserPoolId: userPoolId,
-                    ClientId: clientId,
-                    AuthFlow: "ADMIN_NO_SRP_AUTH",
-                    AuthParameters: {
-                        USERNAME: id,
-                        PASSWORD: password,
-                        SECRET_HASH: secretHash,
-                    },
-                })
-                .promise();
-        } catch (e) {
-            console.log(e);
-            return authorizationRequired();
+        if (!(await authorizer.auth(authParams))) {
+            return invalidUserOrPassword();
         }
     }
 
@@ -119,58 +100,4 @@ export const handler: Handler = async (event, context) => {
     };
 
     return success(body);
-};
-
-const getEnvironment = () => {
-    const bucketName = process.env.BUCKET_NAME || "";
-    const anonymousAuthority = parseList(process.env.ANONYMOUS_AUTHORITY, []);
-    const expires = parseNumber(process.env.EXPIRES, 60 * 60);
-    const userPoolId = process.env.USERPOOL_ID || "";
-    const clientId = process.env.CLIENT_ID || "";
-    const clientSecret = process.env.CLIENT_SECRET || "";
-    return {
-        bucketName,
-        anonymousAuthority,
-        expires,
-        userPoolId,
-        clientId,
-        clientSecret,
-    };
-};
-
-const parseNumber = (value: string | undefined, defaultValue?: number) => {
-    if (value !== undefined && value !== "") {
-        try {
-            const parsed = Number(value);
-            if (!Number.isNaN(parsed)) return parsed;
-        } catch (e) {}
-    }
-
-    if (defaultValue === undefined) throw new Error("parse error");
-    return defaultValue;
-};
-
-const parseBool = (value: string | undefined, defaultValue?: boolean) => {
-    switch (value) {
-        case "true":
-        case "yes":
-        case "1":
-            return true;
-        case "false":
-        case "no":
-        case "0":
-            return false;
-        default:
-            if (defaultValue === undefined) throw new Error("parse error");
-            return defaultValue;
-    }
-};
-
-const parseList = (value: string | undefined, defaultValue?: string[]) => {
-    if (value !== undefined && value !== "") {
-        return value.split(",").map((s) => s.trim());
-    }
-
-    if (defaultValue === undefined) throw new Error("parse error");
-    return defaultValue;
 };

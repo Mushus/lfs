@@ -24,10 +24,15 @@ export interface BatchRespObject {
         download?: BatchRespOperation;
     };
 }
+
 export interface BatchRespOperation {
     href: string;
     header: {
         [key: string]: string;
     };
     expires_at: string;
+}
+
+export interface UserPutRequestBody {
+    password: string;
 }

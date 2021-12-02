@@ -1,11 +1,12 @@
 // To parse this data:
 //
-//   import { Convert, BatchRequestBody, BatchResponseBody, BatchRespObject, BatchRespOperation } from "./file";
+//   import { Convert, BatchRequestBody, BatchResponseBody, BatchRespObject, BatchRespOperation, UserPutRequestBody } from "./file";
 //
 //   const batchRequestBody = Convert.toBatchRequestBody(json);
 //   const batchResponseBody = Convert.toBatchResponseBody(json);
 //   const batchRespObject = Convert.toBatchRespObject(json);
 //   const batchRespOperation = Convert.toBatchRespOperation(json);
+//   const userPutRequestBody = Convert.toUserPutRequestBody(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
@@ -58,6 +59,10 @@ export enum Transfer {
     Basic = "basic",
 }
 
+export interface UserPutRequestBody {
+    password: string;
+}
+
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
@@ -91,6 +96,14 @@ export class Convert {
 
     public static batchRespOperationToJson(value: BatchRespOperation): string {
         return JSON.stringify(uncast(value, r("BatchRespOperation")), null, 2);
+    }
+
+    public static toUserPutRequestBody(json: string): UserPutRequestBody {
+        return cast(JSON.parse(json), r("UserPutRequestBody"));
+    }
+
+    public static userPutRequestBodyToJson(value: UserPutRequestBody): string {
+        return JSON.stringify(uncast(value, r("UserPutRequestBody")), null, 2);
     }
 }
 
@@ -258,6 +271,9 @@ const typeMap: any = {
         { json: "expires_at", js: "expires_at", typ: "" },
         { json: "header", js: "header", typ: m("") },
         { json: "href", js: "href", typ: "" },
+    ], "any"),
+    "UserPutRequestBody": o([
+        { json: "password", js: "password", typ: "" },
     ], "any"),
     "Operation": [
         "download",

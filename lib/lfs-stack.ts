@@ -2,7 +2,6 @@ import { NodejsFunction } from "@aws-cdk/aws-lambda-nodejs";
 import * as cdk from "@aws-cdk/core";
 import * as apigateway from "@aws-cdk/aws-apigateway";
 import * as s3 from "@aws-cdk/aws-s3";
-import * as cognito from "@aws-cdk/aws-cognito";
 import * as iam from "@aws-cdk/aws-iam";
 import UserPool from "./UserPool";
 
@@ -40,11 +39,24 @@ export class LfsStack extends cdk.Stack {
             entry: "lambda/handler/lock.ts",
         });
 
+        const userMePutFunc = new NodejsFunction(this, "userMePutFunc", {
+            entry: "lambda/handler/userMePut.ts",
+            environment,
+        });
+        userMePutFunc.addToRolePolicy(
+            new iam.PolicyStatement({
+                resources: [userPool.userPoolArn],
+                actions: [
+                    "cognito-idp:AdminInitiateAuth",
+                    "cognito-idp:AdminSetUserPassword",
+                ],
+            })
+        );
+
         const gateway = new apigateway.RestApi(this, "gateway", {
             restApiName: `lfs`,
         });
 
-        const user = gateway.root.addResource("user");
         const lfsResource = gateway.root.addResource("lfs");
         const userResource = lfsResource.addResource("{user}");
         const repoResource = userResource.addResource("{repo}");
@@ -59,6 +71,13 @@ export class LfsStack extends cdk.Stack {
         verifyResource.addMethod(
             "POST",
             new apigateway.LambdaIntegration(lockFunc)
+        );
+
+        const user = gateway.root.addResource("user");
+        const userMeResource = user.addResource("me");
+        userMeResource.addMethod(
+            "POST",
+            new apigateway.LambdaIntegration(userMePutFunc)
         );
     }
 }

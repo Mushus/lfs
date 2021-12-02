@@ -35,6 +35,8 @@ export default class UserPool extends cdk.Construct {
             },
         });
 
+        userPool.userPoolId;
+
         const userPoolClient = new cognito.UserPoolClient(this, "client", {
             userPool,
             userPoolClientName: "lfs",
@@ -42,29 +44,31 @@ export default class UserPool extends cdk.Construct {
             authFlows: {
                 adminUserPassword: true,
                 userPassword: true,
-                refreshToken: true,
             },
         });
 
         const region = cdk.Stack.of(this).region;
+
+        const describeUserPoolClientCall: cr.AwsSdkCall = {
+            region,
+            service: "CognitoIdentityServiceProvider",
+            action: "describeUserPoolClient",
+            parameters: {
+                UserPoolId: userPool.userPoolId,
+                ClientId: userPoolClient.userPoolClientId,
+            },
+            physicalResourceId: cr.PhysicalResourceId.of(
+                userPoolClient.userPoolClientId
+            ),
+        };
 
         const describeCognitoUserPoolClient = new cr.AwsCustomResource(
             this,
             "DescribeCognitoUserPoolClient",
             {
                 resourceType: "Custom::DescribeCognitoUserPoolClient",
-                onCreate: {
-                    region,
-                    service: "CognitoIdentityServiceProvider",
-                    action: "describeUserPoolClient",
-                    parameters: {
-                        UserPoolId: userPool.userPoolId,
-                        ClientId: userPoolClient.userPoolClientId,
-                    },
-                    physicalResourceId: cr.PhysicalResourceId.of(
-                        userPoolClient.userPoolClientId
-                    ),
-                },
+                onCreate: describeUserPoolClientCall,
+                onUpdate: describeUserPoolClientCall,
                 // TODO: can we restrict this policy more?
                 policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
                     resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE,
@@ -72,9 +76,10 @@ export default class UserPool extends cdk.Construct {
             }
         );
 
-        const userPoolClientSecret = describeCognitoUserPoolClient.getResponseField(
-            "UserPoolClient.ClientSecret"
-        );
+        const userPoolClientSecret =
+            describeCognitoUserPoolClient.getResponseField(
+                "UserPoolClient.ClientSecret"
+            );
 
         this.userPoolId = userPool.userPoolId;
         this.userPoolArn = userPool.userPoolArn;
